@@ -154,7 +154,7 @@ const SLIDES = [
   },
   { 
     suspense: { icon:'🍕', l1:'Hubo comidas', l2:'que se volvieron rituales…' },
-    type:'stats', emoji:'', title:'Pedidos a medianoche', stat:'89',
+    type:'stats', emoji:'', title:'Pedidos a medianoche', stat:'36',
     sub:'delivery, picadas, antojos y cenas que duraron tres horas',
     c1:'#fb923c', c2:'#ef4444', 
     img: 'foto4.jpg' 
@@ -378,6 +378,7 @@ function renderQuote(s) {
 }
 
 // ── Slide video ──
+// ── Slide video ──
 function renderVideo() {
   const d = document.createElement('div');
   d.className = 'slide';
@@ -403,10 +404,11 @@ function renderVideo() {
   `;
   showSlide(d);
 
-  // --- LÓGICA INTELIGENTE DEL VIDEO ---
+  // --- LÓGICA INTELIGENTE DEL VIDEO (CON HACK ANTIFREEZE) ---
   setTimeout(() => {
     const vid = document.getElementById('mi-video');
     const bgAudio = document.getElementById('audio');
+    let videoTerminado = false; // Bandera de seguridad
     
     if (vid) {
       // 1. Cuando Julián le da Play al video, pausamos a Mazzy Star
@@ -416,18 +418,30 @@ function renderVideo() {
         }
       });
 
-      // 2. Cuando el video termina naturalmente...
-      vid.addEventListener('ended', () => {
-        // Reanudamos la música
-        if (audioPlaying && bgAudio) {
-          bgAudio.play().catch(()=>{});
+      // 2. EL HACK: Revisar el tiempo constantemente
+      vid.addEventListener('timeupdate', () => {
+        // Si el video arrancó y estamos a 0.4 segundos del final...
+        if (vid.duration > 0 && vid.currentTime >= (vid.duration - 0.4)) {
+          if (!videoTerminado) {
+            videoTerminado = true;
+            if (audioPlaying && bgAudio) bgAudio.play().catch(()=>{});
+            advance(); // Forzamos el salto a la torta
+          }
         }
-        // Saltamos automáticamente a la caja de regalo
-        advance();
+      });
+
+      // 3. Dejamos el evento normal por las dudas
+      vid.addEventListener('ended', () => {
+        if (!videoTerminado) {
+          videoTerminado = true;
+          if (audioPlaying && bgAudio) bgAudio.play().catch(()=>{});
+          advance();
+        }
       });
     }
   }, 50);
 }
+
 // ── Slide regalo ──
 function renderGift() {
   giftTaps = 0; giftExploded = false; giftDone = false;
@@ -569,19 +583,10 @@ let ptStart = null, ptLast = null, ptTime = 0, dragging = false;
 const SWIPE_THRESHOLD = 50, VEL_THRESHOLD = 0.3;
 
 function onPtrDown(e) {
-  // 1. Intenta reproducir la música en el primer toque en la pantalla
-  const audio = document.getElementById('audio');
-  if (audio && audio.paused) {
-    audio.play().catch(err => console.log("Esperando interacción..."));
-    audioPlaying = true;
-    const btn = document.getElementById('audio-btn');
-    if (btn) btn.textContent = '⏸';
-  }
-
-  // 2. Evita interferir si está tocando el video o el botón de audio
+  // Evita interferir si está tocando el video o el botón de audio
   if (e.target.closest('video') || e.target.closest('#audio-btn')) return;
   
-  // 3. Registra el inicio del toque o clic para el swipe
+  // Registra el inicio del toque o clic para el swipe
   const t = e.touches ? e.touches[0] : e;
   ptStart = { x: t.clientX, y: t.clientY };
   ptLast  = { x: t.clientX, y: t.clientY };
@@ -590,16 +595,18 @@ function onPtrDown(e) {
   paused = true;
 }
 
-function onPtrMove(e) {
-  if (!ptStart) return;
-  const t = e.touches ? e.touches[0] : e;
-  const dy = t.clientY - ptStart.y;
-  const dx = t.clientX - ptStart.x;
-  if (Math.abs(dy) > 8) { dragging = true; e.preventDefault(); }
-  ptLast = { x: t.clientX, y: t.clientY };
-}
-
 function onPtrUp(e) {
+  // --- 1. EL TRUCO DEL AUDIO (SOLO ARRANCA AL SOLTAR EL DEDO) ---
+  const audio = document.getElementById('audio');
+  if (audio && audio.paused && !audioPlaying) {
+    audio.play().then(() => {
+      audioPlaying = true;
+      const btn = document.getElementById('audio-btn');
+      if (btn) btn.textContent = '⏸';
+    }).catch(() => console.log("Aún bloqueado por el navegador"));
+  }
+
+  // --- 2. LÓGICA DE NAVEGACIÓN ---
   if (!ptStart) return;
   const t = e.changedTouches ? e.changedTouches[0] : e;
   const dy = t.clientY - ptStart.y;
@@ -626,8 +633,9 @@ function onPtrUp(e) {
   }
 
   ptStart = null; dragging = false;
-  // retomar timer si no es gift y no es suspenso
- setTimeout(() => {
+  
+  // --- 3. RETOMAR TIMER ---
+  setTimeout(() => {
     if (SLIDES[cur].type !== 'gift' && SLIDES[cur].type !== 'video' && !showSuspense) { 
       paused = false; 
       startTimer(); 
