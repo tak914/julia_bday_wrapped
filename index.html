@@ -136,7 +136,7 @@ const SLIDES = [
     type:'stats', emoji:'', title:'cantidad de juntadas', stat:'76',
     sub:'noches hablando al pedo, juntadas que dejan anecdotas, risas y momentos unicos',
     c1:'#00e5ff', c2:'#7c3aed', 
-    img:'https://i.postimg.cc/G85qfLSJ/foto1.jpg' 
+    img: 'foto1.jpg' 
   },
   { 
     suspense: { icon:'😂', l1:'Hubo un número', l2:'que no cabe en ninguna foto…' },
@@ -150,21 +150,21 @@ const SLIDES = [
     type:'stats', emoji:'', title:'El dia que mas caminamos', stat:'7.4km',
     sub:'Fuimos a ver a miranda y caminamos un monton, 📍terminal parana -> 📍residencia -> 📍shopping -> 📍costanera -> 📍shopping(de nuevo) -> y despues... todo miranda',
     c1:'#34d399', c2:'#00bfff', 
-    img:'https://i.postimg.cc/GTTqwWZ8/foto3.jpg' 
+    img: 'foto3.jpg' 
   },
   { 
     suspense: { icon:'🍕', l1:'Hubo comidas', l2:'que se volvieron rituales…' },
     type:'stats', emoji:'', title:'Pedidos a medianoche', stat:'89',
     sub:'delivery, picadas, antojos y cenas que duraron tres horas',
     c1:'#fb923c', c2:'#ef4444', 
-    img:'https://i.postimg.cc/QKK0G2RB/foto4.jpg' 
+    img: 'foto4.jpg' 
   },
   { 
     suspense: { icon:'🎵', l1:'tambien nos unió otra cosa', l2:'MÚSICA' },
     type:'stats', emoji:'🎵', title:'Canciones en loop', stat:'ceiling figures',
     sub:'Poder hacer música con tu mejor amigo se siente como un privilegio',
     c1:'#a78bfa', c2:'#ec4899', 
-    img:'https://i.postimg.cc/D44Bk9tS/foto5.jpg' 
+    img: 'foto5.jpg' 
   },
   { 
     suspense: { icon:'💬', l1:'Algunas palabras', l2:'no se olvidan jamás…' },
@@ -173,7 +173,7 @@ const SLIDES = [
     author:'Me lo dijiste vos.. (supongo, pq le pase el chat nuestro a una IA y me dijo que me dijiste eso..)',
     c1:'#a78bfa', c2:'#ec4899' 
   },
-  { suspense: { icon:'🎬', l1:'Y hubo un momentos', l2:'que quedaron grabados para siempre…' },
+  { suspense: { icon:'🎬', l1:'Y hubo momentos', l2:'que quedaron grabados para siempre…' },
     type:'video' 
   },
   { suspense: { icon:'🎁', l1:'Pero lo mejor', l2:'todavía no llegó…' },
@@ -388,14 +388,14 @@ function renderVideo() {
         <span style="font-size:2rem;filter:drop-shadow(0 0 16px #f472b6);">🎬</span>
         <p class="uppercase tracking-widest opacity-45" style="font-size:11px;">El momento del año</p>
       </div>
-      <div style="width:100%; border-radius:16px; overflow:hidden; background:rgba(0,0,0,.3); aspect-ratio: 16/9; border:1px solid rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center;">
-        <iframe 
-          src="https://player.vimeo.com/video/1184403332?h=74c84534a6&badge=0&autopause=0&player_id=0&app_id=58479" 
-          frameborder="0" 
-          allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media" 
-          style="width:100%; height:100%;" 
-          title="Video de Cumple">
-        </iframe>
+      <div style="width:100%; border-radius:16px; overflow:hidden; background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center;" id="vid-wrap">
+        <video 
+          src="video.mp4" 
+          controls 
+          playsinline 
+          style="width:100%; border-radius:16px;" 
+          onerror="console.error('No se pudo cargar el video')">
+        </video>
       </div>
       <p class="opacity-50 leading-relaxed" style="font-size:13px;">Ese momento que guardamos para siempre 🥳</p>
     </div>
