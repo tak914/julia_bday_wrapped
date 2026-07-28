@@ -6551,41 +6551,73 @@ switchProfileBtn?.addEventListener("click", (e) => {
         const rect = row.getBoundingClientRect();
         const pointerId = startEvent.pointerId;
         const offsetY = startEvent.clientY - rect.top;
+        const baseTop = rect.top;
 
         // Placeholder que mantiene el espacio original en la lista
         const placeholder = document.createElement('div');
         placeholder.style.cssText = `height:${rect.height}px;border-radius:10px;border:1.5px dashed var(--accent);opacity:0.35;flex-shrink:0;`;
         list.insertBefore(placeholder, row);
 
-        // La fila "flota" y sigue al dedo/mouse
+        // La fila "flota" y sigue al dedo/mouse.
+        // Nota de rendimiento: la posición vertical se anima con "transform"
+        // (solo composición, no fuerza layout) en vez de "top", y los cálculos
+        // se agrupan una vez por frame con requestAnimationFrame en vez de
+        // ejecutarse en cada evento táctil crudo — esto es lo que evita el
+        // lag/tirones al arrastrar en mobile.
         row.style.position = 'fixed';
         row.style.left     = rect.left + 'px';
-        row.style.top      = rect.top + 'px';
+        row.style.top      = baseTop + 'px';
         row.style.width    = rect.width + 'px';
         row.style.zIndex   = '9999';
         row.style.boxShadow = '0 12px 32px rgba(0,0,0,0.6)';
         row.style.pointerEvents = 'none';
         row.style.transition = 'none';
+        row.style.willChange = 'transform';
         document.body.appendChild(row);
+
+        // Límites: la tarjeta flotante no puede salirse del contenedor de la lista
+        // (antes se podía arrastrar hasta el header u otras secciones).
+        const listRect     = list.getBoundingClientRect();
+        const minTranslate  = listRect.top - baseTop;
+        const maxTranslate  = (listRect.bottom - rect.height) - baseTop;
 
         try { row.setPointerCapture(pointerId); } catch {}
 
-        function onMove(e) {
-          if (e.pointerId !== pointerId) return;
-          row.style.top = (e.clientY - offsetY) + 'px';
+        let lastClientY = startEvent.clientY;
+        let frameQueued = false;
+
+        function processFrame() {
+          frameQueued = false;
+          const rawTranslate = lastClientY - offsetY - baseTop;
+          const clampedTranslate = Math.min(maxTranslate, Math.max(minTranslate, rawTranslate));
+          row.style.transform = `translateY(${clampedTranslate}px)`;
+
+          // El punto usado para decidir dónde va el placeholder también se
+          // acota a los límites de la lista, así el orden no se ve afectado
+          // por soltar el dedo fuera de ella.
+          const clampedClientY = Math.min(listRect.bottom, Math.max(listRect.top, lastClientY));
 
           const siblings = Array.from(list.children).filter(c => c !== placeholder);
           let placed = false;
           for (const sib of siblings) {
             const sRect = sib.getBoundingClientRect();
             const mid = sRect.top + sRect.height / 2;
-            if (e.clientY < mid) {
+            if (clampedClientY < mid) {
               list.insertBefore(placeholder, sib);
               placed = true;
               break;
             }
           }
           if (!placed) list.appendChild(placeholder);
+        }
+
+        function onMove(e) {
+          if (e.pointerId !== pointerId) return;
+          lastClientY = e.clientY;
+          if (!frameQueued) {
+            frameQueued = true;
+            requestAnimationFrame(processFrame);
+          }
         }
 
         function onUp(e) {
@@ -6604,6 +6636,8 @@ switchProfileBtn?.addEventListener("click", (e) => {
           row.style.boxShadow = '';
           row.style.pointerEvents = '';
           row.style.transition = '';
+          row.style.transform = '';
+          row.style.willChange = '';
 
           const newOrder = Array.from(list.children).map(r => r.dataset.reviewId);
           saveReviewsOrder(newOrder);
@@ -6613,6 +6647,7 @@ switchProfileBtn?.addEventListener("click", (e) => {
         document.addEventListener('pointerup', onUp);
         document.addEventListener('pointercancel', onUp);
       }
+
 
       // Cerrar cualquier menú abierto al tocar fuera de las tarjetas
       document.addEventListener('click', (e) => {
