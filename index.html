@@ -2970,7 +2970,7 @@ border-right: 1px solid rgba(255,255,255,0.06);
             webkitallowfullscreen
             mozallowfullscreen
             allow="autoplay; fullscreen *; encrypted-media; picture-in-picture"
-            sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-top-navigation-by-user-activation allow-popups allow-popups-to-escape-sandbox allow-orientation-lock allow-pointer-lock allow-modals"
+            sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-orientation-lock allow-pointer-lock allow-modals"
             referrerpolicy="origin"
           ></iframe>
           <div id="next-episode-overlay">
@@ -3172,9 +3172,23 @@ border-right: 1px solid rgba(255,255,255,0.06);
       note.textContent = textos[currentServer] || textos.imdb;
     }
 
+    // ── Sandbox dinámico por servidor ──────────────────────────
+    // "cinesrc" (Servidor 2) abre anuncios/redirects si tiene permiso de
+    // popups o navegación de nivel superior, así que a ese lo dejamos SIN
+    // allow-popups / allow-popups-to-escape-sandbox / allow-top-navigation*.
+    // Los demás servidores mantienen el set más permisivo original por si
+    // alguno lo necesita para funcionar correctamente.
+    const SANDBOX_RESTRICTIVO = "allow-scripts allow-same-origin allow-presentation allow-forms allow-orientation-lock allow-pointer-lock allow-modals";
+    const SANDBOX_PERMISIVO  = "allow-scripts allow-same-origin allow-presentation allow-forms allow-top-navigation-by-user-activation allow-popups allow-popups-to-escape-sandbox allow-orientation-lock allow-pointer-lock allow-modals";
+
+    function getSandboxForServer(server) {
+      return server === "cinesrc" ? SANDBOX_RESTRICTIVO : SANDBOX_PERMISIVO;
+    }
+
     function loadCurrentPlayer() {
       const url = buildPlayerUrl();
       if (!url) return;
+      movieFrame.setAttribute("sandbox", getSandboxForServer(currentServer));
       movieFrame.src = "about:blank";
       setTimeout(() => { movieFrame.src = url; }, 120);
       updatePlayerNote();
